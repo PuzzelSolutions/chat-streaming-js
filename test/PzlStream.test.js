@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { StreamConnector, StreamEventTypes, StreamErrors, StreamSubscription } from '../src/PzlStream';
+import {
+  StreamConnector,
+  StreamEventTypes,
+  StreamErrors,
+  StreamSubscription,
+} from '../src/PzlStream';
 
 describe('PzlStream (entry point)', () => {
   it('exports StreamConnector', () => {

@@ -1,14 +1,14 @@
 /** Logging interface used throughout the library. Supply `console` or a custom logger. */
 export interface DebugLogger {
-    debugDisabled?: boolean;
-    log: (...args: unknown[]) => void;
-    warn: (...args: unknown[]) => void;
-    error: (...args: unknown[]) => void;
-    info: (...args: unknown[]) => void;
+  debugDisabled?: boolean;
+  log: (...args: unknown[]) => void;
+  warn: (...args: unknown[]) => void;
+  error: (...args: unknown[]) => void;
+  info: (...args: unknown[]) => void;
 }
 
 const wait = (ms: number): Promise<void> => {
-    return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 };
 
 /**
@@ -21,21 +21,21 @@ const wait = (ms: number): Promise<void> => {
  * @returns The resolved value from the first successful attempt.
  */
 export const retryPromiseFunc = async (
-    promisedFunction: () => Promise<unknown>,
-    delay: number,
-    maxRetries: number,
-    abortReason?: unknown
+  promisedFunction: () => Promise<unknown>,
+  delay: number,
+  maxRetries: number,
+  abortReason?: unknown,
 ): Promise<unknown> => {
-    for (let attempt = 0; attempt < maxRetries; attempt++) {
-        try {
-            return await promisedFunction();
-        } catch (reason: unknown) {
-            if (reason === abortReason || attempt >= maxRetries - 1) {
-                throw reason;
-            }
-            await wait(delay);
-        }
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      return await promisedFunction();
+    } catch (reason: unknown) {
+      if (reason === abortReason || attempt >= maxRetries - 1) {
+        throw reason;
+      }
+      await wait(delay);
     }
+  }
 };
 
 /**
@@ -45,12 +45,12 @@ export const retryPromiseFunc = async (
  * @param ms - Timeout in milliseconds. If exceeded, the returned promise rejects with `Error('timeout')`.
  */
 export const promiseTimeout = <T>(promise: Promise<T>, ms: number): Promise<T> => {
-    return Promise.race([
-        promise,
-        new Promise<never>((_resolve, reject) => {
-            wait(ms).then(() => reject(new Error('timeout')));
-        })
-    ]);
+  return Promise.race([
+    promise,
+    new Promise<never>((_resolve, reject) => {
+      wait(ms).then(() => reject(new Error('timeout')));
+    }),
+  ]);
 };
 
 /**
@@ -64,30 +64,31 @@ export const promiseTimeout = <T>(promise: Promise<T>, ms: number): Promise<T> =
  * and arrays at matching keys are deduplicated.
  */
 export const mergeDeep = (...objects: unknown[]): unknown => {
-    const isObject = (obj: unknown): obj is Record<string, unknown> => obj !== null && typeof obj === 'object';
-    return objects.reduce((prev: unknown, obj: unknown) => {
-        if (!prev || !isObject(prev)) prev = {};
-        if (isObject(obj)) {
-            Object.keys(obj).forEach(key => {
-                const pVal = (prev as Record<string, unknown>)[key];
-                const oVal = obj[key];
-                if (Array.isArray(oVal) && Array.isArray(pVal)) {
-                    (prev as Record<string, unknown>)[key] = [...new Set([...oVal, ...pVal])];
-                } else if (isObject(oVal) && isObject(pVal)) {
-                    (prev as Record<string, unknown>)[key] = mergeDeep(pVal, oVal);
-                } else {
-                    if (isObject(pVal)) {
-                        (prev as Record<string, unknown>)[key] = oVal;
-                    } else {
-                        prev = obj;
-                    }
-                }
-            });
-            return prev;
+  const isObject = (obj: unknown): obj is Record<string, unknown> =>
+    obj !== null && typeof obj === 'object';
+  return objects.reduce((prev: unknown, obj: unknown) => {
+    if (!prev || !isObject(prev)) prev = {};
+    if (isObject(obj)) {
+      Object.keys(obj).forEach((key) => {
+        const pVal = (prev as Record<string, unknown>)[key];
+        const oVal = obj[key];
+        if (Array.isArray(oVal) && Array.isArray(pVal)) {
+          (prev as Record<string, unknown>)[key] = [...new Set([...oVal, ...pVal])];
+        } else if (isObject(oVal) && isObject(pVal)) {
+          (prev as Record<string, unknown>)[key] = mergeDeep(pVal, oVal);
         } else {
-            return obj;
+          if (isObject(pVal)) {
+            (prev as Record<string, unknown>)[key] = oVal;
+          } else {
+            prev = obj;
+          }
         }
-    }, {});
+      });
+      return prev;
+    } else {
+      return obj;
+    }
+  }, {});
 };
 
 /**
@@ -95,20 +96,20 @@ export const mergeDeep = (...objects: unknown[]): unknown => {
  * in environments where `localStorage` is unavailable (Node, sandboxed iframes).
  */
 export const safeLocalStorageGet = (key: string): string | null | undefined => {
-    try {
-        if (typeof localStorage !== 'undefined') {
-            return localStorage.getItem(key);
-        }
-    } catch {
-        // Node or sandboxed env -- ignore
+  try {
+    if (typeof localStorage !== 'undefined') {
+      return localStorage.getItem(key);
     }
+  } catch {
+    // Node or sandboxed env -- ignore
+  }
 };
 
 /** Default no-op logger used when no debug functions are supplied. */
 export const noDebug: DebugLogger = {
-    debugDisabled: true,
-    log: () => {},
-    warn: () => {},
-    error: () => {},
-    info: () => {}
+  debugDisabled: true,
+  log: () => {},
+  warn: () => {},
+  error: () => {},
+  info: () => {},
 };

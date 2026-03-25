@@ -68,10 +68,13 @@ describe('Stream', () => {
       const conn = mockConnection();
       const sub = makeSub('topic');
       Stream.getReverse(conn, sub, 10, 0);
-      expect(conn.stream).toHaveBeenCalledWith('GetReverse', expect.objectContaining({
-        topic: 'topic',
-        take: 10,
-      }));
+      expect(conn.stream).toHaveBeenCalledWith(
+        'GetReverse',
+        expect.objectContaining({
+          topic: 'topic',
+          take: 10,
+        }),
+      );
     });
   });
 
@@ -80,10 +83,13 @@ describe('Stream', () => {
       const conn = mockConnection();
       const sub = makeSub('my-topic');
       Stream.stream(conn, sub, 5);
-      expect(conn.stream).toHaveBeenCalledWith('Subscribe', expect.objectContaining({
-        topic: 'my-topic',
-        skip: 4,
-      }));
+      expect(conn.stream).toHaveBeenCalledWith(
+        'Subscribe',
+        expect.objectContaining({
+          topic: 'my-topic',
+          skip: 4,
+        }),
+      );
     });
 
     it('uses custom streamMethod', () => {
@@ -113,9 +119,12 @@ describe('Stream', () => {
     it('spreads extraProps into the invoke call', () => {
       const conn = mockConnection();
       Stream.publish(conn, 'topic', {}, { publishMethod: 'Publish' }, { correlationId: '123' });
-      expect(conn.invoke).toHaveBeenCalledWith('Publish', expect.objectContaining({
-        correlationId: '123',
-      }));
+      expect(conn.invoke).toHaveBeenCalledWith(
+        'Publish',
+        expect.objectContaining({
+          correlationId: '123',
+        }),
+      );
     });
   });
 });

@@ -6,9 +6,9 @@
  * - `STREAMED_CHUNK` -- a partial array fetched via `Get` (resuming mid-topic)
  */
 const StreamEventTypes = {
-    STATE: 'state',
-    STREAM: 'stream',
-    STREAMED_CHUNK: 'chunk'
+  STATE: 'state',
+  STREAM: 'stream',
+  STREAMED_CHUNK: 'chunk',
 } as const;
 
 /** Union of the string literal event-type values. */

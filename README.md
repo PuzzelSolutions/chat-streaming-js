@@ -26,7 +26,7 @@ await StreamConnector.init(
     onConnectionStarted: (connection) => console.log('Connected!', connection),
     onConnectionFailed: (error) => console.error('Connection failed', error),
     onDisconnected: () => console.warn('Disconnected from broker'),
-  }
+  },
 );
 
 // 2. Create a subscription
@@ -106,11 +106,17 @@ Publish data to a topic. Rejects with `'Not connected'` if the broker is not con
 ```typescript
 const sub = new StreamSubscription({
   topic: 'my-topic',
-  onDataReceived: (events, receivedAs) => { /* handle events */ },
-  onSubscriptionStart: () => { /* subscription is live */ },
-  onSubscriptionEnd: () => { /* subscription was removed */ },
+  onDataReceived: (events, receivedAs) => {
+    /* handle events */
+  },
+  onSubscriptionStart: () => {
+    /* subscription is live */
+  },
+  onSubscriptionEnd: () => {
+    /* subscription was removed */
+  },
   options: {
-    getMethod: 'Get',          // SignalR method for fetching history
+    getMethod: 'Get', // SignalR method for fetching history
     streamMethod: 'Subscribe', // SignalR method for real-time events
   },
 });
@@ -155,9 +161,9 @@ Subscription errors are returned as objects with the shape:
 
 ```typescript
 {
-  errorCode: number;    // One of StreamErrors.*
+  errorCode: number; // One of StreamErrors.*
   errorMessage: string; // Human-readable description
-  err: unknown;         // Original error from SignalR or the broker
+  err: unknown; // Original error from SignalR or the broker
 }
 ```
 

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { initBrokerConnectionFsm } from '../src/BrokerFSM';
 import { noDebug } from '../src/StreamUtils';
 

@@ -1,5 +1,11 @@
 import { describe, it, expect, vi } from 'vitest';
-import { mergeDeep, promiseTimeout, retryPromiseFunc, safeLocalStorageGet, noDebug } from '../src/StreamUtils';
+import {
+  mergeDeep,
+  promiseTimeout,
+  retryPromiseFunc,
+  safeLocalStorageGet,
+  noDebug,
+} from '../src/StreamUtils';
 
 describe('mergeDeep', () => {
   it('replaces accumulator when prev key is primitive/undefined', () => {
@@ -16,10 +22,7 @@ describe('mergeDeep', () => {
   });
 
   it('truly deep merges when both sides have matching object-valued keys', () => {
-    const result = mergeDeep(
-      { a: { nested: { x: 1 } } },
-      { a: { nested: { y: 2 } } }
-    );
+    const result = mergeDeep({ a: { nested: { x: 1 } } }, { a: { nested: { y: 2 } } });
     // Both 'a' values are objects, both 'nested' values are objects,
     // but inner keys are primitives so the innermost level still replaces
     expect(result).toEqual({ a: { nested: { y: 2 } } });
@@ -70,7 +73,7 @@ describe('promiseTimeout', () => {
   });
 
   it('rejects with timeout error if promise takes too long', async () => {
-    const slow = new Promise(resolve => setTimeout(resolve, 500));
+    const slow = new Promise((resolve) => setTimeout(resolve, 500));
     await expect(promiseTimeout(slow, 10)).rejects.toThrow('timeout');
   });
 });
@@ -84,9 +87,7 @@ describe('retryPromiseFunc', () => {
   });
 
   it('retries on failure then resolves', async () => {
-    const fn = vi.fn()
-      .mockRejectedValueOnce('fail')
-      .mockResolvedValue('ok');
+    const fn = vi.fn().mockRejectedValueOnce('fail').mockResolvedValue('ok');
     const result = await retryPromiseFunc(fn, 10, 3, 'abort');
     expect(result).toBe('ok');
     expect(fn).toHaveBeenCalledTimes(2);
