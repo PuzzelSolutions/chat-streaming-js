@@ -28,7 +28,7 @@
 
 <p>Install the streaming library and its peer dependency:</p>
 
-<pre><code>npm install @Puzzel/chat-streaming-js @microsoft/signalr</code></pre>
+<pre><code>npm install @puzzel/chat-streaming-js @microsoft/signalr</code></pre>
 
 <p><code>@microsoft/signalr</code> (version 6 or later) is a <strong>peer dependency</strong> and must be installed
     alongside the library.</p>
@@ -231,7 +231,7 @@
 
 <p>The main interface for managing broker connections and subscriptions. Imported from the library:</p>
 
-<pre><code>import { StreamConnector, StreamSubscription, StreamEventTypes, StreamErrors } from '@Puzzel/chat-streaming-js';</code></pre>
+<pre><code>import { StreamConnector, StreamSubscription, StreamEventTypes, StreamErrors } from '@puzzel/chat-streaming-js';</code></pre>
 
 <h4>StreamConnector.init(brokerUrl, options?, callbacks?)</h4>
 
@@ -706,7 +706,7 @@
 <p>This example demonstrates the full lifecycle: authenticate, connect to streaming, subscribe to topics, send messages
     via REST, and clean up.</p>
 
-<pre><code>import { StreamConnector, StreamSubscription, StreamEventTypes, StreamErrors } from '@Puzzel/chat-streaming-js';
+<pre><code>import { StreamConnector, StreamSubscription, StreamEventTypes, StreamErrors } from '@puzzel/chat-streaming-js';
 
 const BROKER_URL = 'https://app-commsrv.puzzel.com/hubs/v1/messagebroker';
 const API_BASE = 'https://app-commsrv.puzzel.com/api';
@@ -1027,4 +1027,4 @@ localStorage.setItem('pzl-broker-log-level', 'info');</code></pre>
 
 <p>An unminified ESM bundle is available for easier debugging:</p>
 
-<pre><code>import { StreamConnector } from '@Puzzel/chat-streaming-js/debug';</code></pre>
+<pre><code>import { StreamConnector } from '@puzzel/chat-streaming-js/debug';</code></pre>

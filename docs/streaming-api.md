@@ -23,7 +23,7 @@ For the full REST API reference, see the
 Install the streaming library and its peer dependency:
 
 ```
-npm install @Puzzel/chat-streaming-js @microsoft/signalr
+npm install @puzzel/chat-streaming-js @microsoft/signalr
 ```
 
 `@microsoft/signalr` (version 6 or later) is a **peer dependency** and must be installed
@@ -112,7 +112,7 @@ The REST API is used for **sending** data and performing actions.
 The main interface for managing broker connections and subscriptions. Imported from the library:
 
 ```js
-import { StreamConnector, StreamSubscription, StreamEventTypes, StreamErrors } from '@Puzzel/chat-streaming-js';
+import { StreamConnector, StreamSubscription, StreamEventTypes, StreamErrors } from '@puzzel/chat-streaming-js';
 ```
 
 #### StreamConnector.init(brokerUrl, options?, callbacks?)
@@ -343,7 +343,7 @@ This example demonstrates the full lifecycle: authenticate, connect to streaming
 via REST, and clean up.
 
 ```js
-import { StreamConnector, StreamSubscription, StreamEventTypes, StreamErrors } from '@Puzzel/chat-streaming-js';
+import { StreamConnector, StreamSubscription, StreamEventTypes, StreamErrors } from '@puzzel/chat-streaming-js';
 
 const BROKER_URL = 'https://app-commsrv.puzzel.com/hubs/v1/messagebroker';
 const API_BASE = 'https://app-commsrv.puzzel.com/api';
@@ -624,5 +624,5 @@ await StreamConnector.init(brokerUrl, options, callbacks, console);
 An unminified ESM bundle is available for easier debugging:
 
 ```js
-import { StreamConnector } from '@Puzzel/chat-streaming-js/debug';
+import { StreamConnector } from '@puzzel/chat-streaming-js/debug';
 ```
