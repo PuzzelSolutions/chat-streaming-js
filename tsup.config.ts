@@ -2,7 +2,7 @@ import { defineConfig } from 'tsup';
 
 export default defineConfig([
   {
-    entry: { 'chat-streaming-js': 'src/PzlStream.ts' },
+    entry: { 'streaming-lib': 'src/PzlStream.ts' },
     format: ['esm'],
     dts: true,
     sourcemap: true,
@@ -12,7 +12,7 @@ export default defineConfig([
     outExtension: () => ({ js: '.mjs' }),
   },
   {
-    entry: { 'chat-streaming-js': 'src/PzlStream.ts' },
+    entry: { 'streaming-lib': 'src/PzlStream.ts' },
     format: ['cjs'],
     sourcemap: true,
     minify: true,
@@ -20,7 +20,7 @@ export default defineConfig([
     outExtension: () => ({ js: '.cjs' }),
   },
   {
-    entry: { 'chat-streaming-js': 'src/PzlStream.ts' },
+    entry: { 'streaming-lib': 'src/PzlStream.ts' },
     format: ['esm'],
     sourcemap: true,
     minify: false,

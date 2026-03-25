@@ -1,4 +1,4 @@
-console.log('[chat-streaming-js] v2.0.0 loaded');
+console.log('[streaming-lib] v2.0.0 loaded');
 
 import StreamConnector from './StreamConnector';
 import StreamErrors from './StreamErrors';
