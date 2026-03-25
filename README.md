@@ -17,7 +17,7 @@ import { StreamConnector, StreamSubscription, StreamEventTypes } from '@Puzzel/c
 
 // 1. Initialize the connector
 await StreamConnector.init(
-  'https://app-commsrv.puzzel.com/hubs/v1',
+  'https://app-commsrv.puzzel.com/hubs/v1/messagebroker',
   {
     brokerTransport: 'WebSockets',
     access_token: 'your-token',
