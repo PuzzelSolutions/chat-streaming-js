@@ -1,0 +1,1030 @@
+<h1>Puzzel Chat Streaming JS API</h1>
+
+<h2>Introduction</h2>
+
+<p>
+    The Puzzel Chat Streaming Library provides real-time, event-driven communication for chat applications
+    built on the Puzzel Contact Centre platform. It is a managed layer over
+    <a href="https://learn.microsoft.com/en-us/aspnet/core/signalr/introduction">Microsoft SignalR</a>
+    that handles connection management, automatic reconnection, topic subscriptions, and ordered event delivery.
+</p>
+
+<p>
+    Instead of polling REST endpoints for new messages and status updates, the streaming library pushes events
+    to your application the moment they occur &mdash; giving your users a responsive, real-time chat experience.
+</p>
+
+<p>
+    The streaming library is used alongside the Puzzel Chat REST API. Real-time events (incoming messages,
+    agent allocation updates, typing indicators) arrive through the streaming connection, while outbound
+    actions (sending messages, requesting an agent, posting metadata) are performed via REST.
+    For the full REST API reference, see the
+    <a href="https://app-cdn.puzzel.com/public/chat-api-swagger/index.html">Puzzel Chat API Swagger</a>.
+</p>
+
+<hr>
+
+<h2>Prerequisites</h2>
+
+<p>Install the streaming library and its peer dependency:</p>
+
+<pre><code>npm install chat-streaming-lib @microsoft/signalr</code></pre>
+
+<p><code>@microsoft/signalr</code> (version 6 or later) is a <strong>peer dependency</strong> and must be installed
+    alongside the library.</p>
+
+<p>Requires Node.js 18 or later if used in a server-side or build environment.</p>
+
+<hr>
+
+<h2>Authentication</h2>
+
+<p>
+    The streaming library and the REST API share the same authentication token.
+    You obtain a token from the Puzzel Consumer Identity Provider before connecting.
+</p>
+
+<h3>Obtaining a Token</h3>
+
+<table border="1" cellpadding="6" cellspacing="0">
+    <tr>
+        <td><strong>Endpoint</strong></td>
+        <td><code>https://app-consumeridp.puzzel.com/connect/token</code></td>
+    </tr>
+    <tr>
+        <td><strong>Method</strong></td>
+        <td><code>POST</code></td>
+    </tr>
+    <tr>
+        <td><strong>Content-Type</strong></td>
+        <td><code>application/x-www-form-urlencoded</code></td>
+    </tr>
+</table>
+
+<p>Required body parameters:</p>
+
+<table border="1" cellpadding="6" cellspacing="0">
+    <thead>
+        <tr>
+            <th>Parameter</th>
+            <th>Value</th>
+            <th>Description</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>client_id</code></td>
+            <td><code>oneplatform_engage</code></td>
+            <td>Static value. Always required.</td>
+        </tr>
+        <tr>
+            <td><code>grant_type</code></td>
+            <td><code>visitor</code></td>
+            <td>Static value. Always required.</td>
+        </tr>
+        <tr>
+            <td><code>tenant_id</code></td>
+            <td><em>[Your Customer ID]</em></td>
+            <td>Your Puzzel Customer ID (e.g. <code>10009</code>).</td>
+        </tr>
+    </tbody>
+</table>
+
+<p>On success, the endpoint returns a JSON object containing <code>access_token</code>, <code>refresh_token</code>, and
+    <code>expires_in</code>.</p>
+
+<h3>Refreshing a Token</h3>
+
+<p>Tokens expire. Refresh before the <code>expires_in</code> interval elapses to maintain your session.</p>
+
+<table border="1" cellpadding="6" cellspacing="0">
+    <tr>
+        <td><strong>Endpoint</strong></td>
+        <td><code>https://app-consumeridp.puzzel.com/connect/token</code></td>
+    </tr>
+    <tr>
+        <td><strong>Method</strong></td>
+        <td><code>POST</code></td>
+    </tr>
+    <tr>
+        <td><strong>Content-Type</strong></td>
+        <td><code>application/x-www-form-urlencoded</code></td>
+    </tr>
+</table>
+
+<table border="1" cellpadding="6" cellspacing="0">
+    <thead>
+        <tr>
+            <th>Parameter</th>
+            <th>Value</th>
+            <th>Description</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>grant_type</code></td>
+            <td><code>refresh_token</code></td>
+            <td>Tells the API you are refreshing an existing session.</td>
+        </tr>
+        <tr>
+            <td><code>refresh_token</code></td>
+            <td><em>[Your Refresh Token]</em></td>
+            <td>The refresh token received from the initial token request.</td>
+        </tr>
+        <tr>
+            <td><code>client_id</code></td>
+            <td><code>oneplatform_engage</code></td>
+            <td>Static value. Always required.</td>
+        </tr>
+        <tr>
+            <td><code>tenant_id</code></td>
+            <td><em>[Your Customer ID]</em></td>
+            <td>Your Puzzel Customer ID.</td>
+        </tr>
+    </tbody>
+</table>
+
+<p>
+    On success, the endpoint returns a new <code>access_token</code> and <code>refresh_token</code>.
+    After refreshing, update the streaming connection by calling
+    <code>StreamConnector.updateAccessToken(newToken)</code>.
+</p>
+
+<hr>
+
+<h2>Streaming vs REST &mdash; What Goes Where</h2>
+
+<p>
+    The streaming connection is used for <strong>receiving</strong> real-time events.
+    The REST API is used for <strong>sending</strong> data and performing actions.
+</p>
+
+<h3>Through Streaming (real-time inbound events)</h3>
+
+<table border="1" cellpadding="6" cellspacing="0">
+    <thead>
+        <tr>
+            <th>Stream Topic</th>
+            <th>What You Receive</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>Conversation::{conversationId}</code></td>
+            <td>Incoming chat messages, conversation data events, link events</td>
+        </tr>
+        <tr>
+            <td><code>Allocation::{conversationId}</code></td>
+            <td>Agent allocation status updates (agent assigned, queue position changes)</td>
+        </tr>
+        <tr>
+            <td><code>MetaData::{conversationId}</code></td>
+            <td>Metadata events (typing indicators, participant join/leave notifications)</td>
+        </tr>
+    </tbody>
+</table>
+
+<h3>Through REST API (outbound actions)</h3>
+
+<table border="1" cellpadding="6" cellspacing="0">
+    <thead>
+        <tr>
+            <th>Action</th>
+            <th>Method</th>
+            <th>Endpoint</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Send a chat message</td>
+            <td><code>POST</code></td>
+            <td><code>/conversation/{id}/Message</code></td>
+        </tr>
+        <tr>
+            <td>Send metadata (typing, join, leave)</td>
+            <td><code>POST</code></td>
+            <td><code>/MetaData/{id}</code></td>
+        </tr>
+        <tr>
+            <td>Request an agent (route conversation)</td>
+            <td><code>PUT</code></td>
+            <td><code>/conversation/{id}/route/{queueKey}</code></td>
+        </tr>
+        <tr>
+            <td>Check queue / opening hours</td>
+            <td><code>GET</code></td>
+            <td><code>/queue/info/{queueKey}</code></td>
+        </tr>
+        <tr>
+            <td>Disconnect from conversation</td>
+            <td><code>DELETE</code></td>
+            <td><code>/conversation/{id}/disconnect</code></td>
+        </tr>
+    </tbody>
+</table>
+
+<hr>
+
+<h2>Streaming Library API Reference</h2>
+
+<h3>StreamConnector</h3>
+
+<p>The main interface for managing broker connections and subscriptions. Imported from the library:</p>
+
+<pre><code>import { StreamConnector, StreamSubscription, StreamEventTypes, StreamErrors } from 'chat-streaming-lib';</code></pre>
+
+<h4>StreamConnector.init(brokerUrl, options?, callbacks?)</h4>
+
+<p>Initialize or reconfigure the streaming connection.</p>
+
+<table border="1" cellpadding="6" cellspacing="0">
+    <thead>
+        <tr>
+            <th>Parameter</th>
+            <th>Type</th>
+            <th>Description</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>brokerUrl</code></td>
+            <td><code>string</code></td>
+            <td>URL of the SignalR hub endpoint. Use <code>https://app-commsrv.puzzel.com/hubs/v1/messagebroker</code>
+            </td>
+        </tr>
+        <tr>
+            <td><code>options</code></td>
+            <td><code>StreamConnectorInitOptions</code></td>
+            <td>Connection and transport settings (see table below)</td>
+        </tr>
+        <tr>
+            <td><code>callbacks</code></td>
+            <td><code>BrokerEventCallbacks</code></td>
+            <td>Lifecycle event handlers</td>
+        </tr>
+    </tbody>
+</table>
+
+<p>Returns a <code>Promise&lt;string&gt;</code> that resolves to <code>'disconnected'</code> (first init),
+    <code>'re-connected'</code> (config changed), or <code>'no change'</code>.</p>
+
+<h5>Init Options</h5>
+
+<table border="1" cellpadding="6" cellspacing="0">
+    <thead>
+        <tr>
+            <th>Option</th>
+            <th>Type</th>
+            <th>Default</th>
+            <th>Description</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>brokerTransport</code></td>
+            <td><code>string</code></td>
+            <td><code>'WebSockets'</code></td>
+            <td>Transport type: <code>'WebSockets'</code>, <code>'LongPolling'</code>, <code>'ServerSentEvents'</code>,
+                <code>'Negotiate'</code>, <code>'None'</code></td>
+        </tr>
+        <tr>
+            <td><code>access_token</code></td>
+            <td><code>string</code></td>
+            <td><code>null</code></td>
+            <td>Static access token for authentication</td>
+        </tr>
+        <tr>
+            <td><code>accessTokenFactory</code></td>
+            <td><code>() =&gt; string | Promise&lt;string&gt;</code></td>
+            <td><code>null</code></td>
+            <td>Function that returns the current token. Called on each connection attempt. Use this instead of
+                <code>access_token</code> to always provide the latest token.</td>
+        </tr>
+        <tr>
+            <td><code>brokerLogLevel</code></td>
+            <td><code>string</code></td>
+            <td><code>'none'</code></td>
+            <td>SignalR log level: <code>'trace'</code>, <code>'debug'</code>, <code>'info'</code>, <code>'warn'</code>,
+                <code>'error'</code>, <code>'critical'</code>, <code>'none'</code></td>
+        </tr>
+        <tr>
+            <td><code>streamingSubscribeOnly</code></td>
+            <td><code>boolean</code></td>
+            <td><code>false</code></td>
+            <td>If <code>true</code>, skips fetching topic history on subscribe and only receives new events</td>
+        </tr>
+        <tr>
+            <td><code>streamingSubscribeOnResume</code></td>
+            <td><code>boolean</code></td>
+            <td><code>true</code></td>
+            <td>If <code>true</code>, skips re-fetching history when resuming a subscription mid-topic</td>
+        </tr>
+        <tr>
+            <td><code>reconnectRetryPolicy</code></td>
+            <td><code>number[] | IRetryPolicy</code></td>
+            <td><code>[0, 500, 3000, 5000, 10000]</code></td>
+            <td>SignalR auto-reconnect intervals in milliseconds, or a custom retry policy object</td>
+        </tr>
+    </tbody>
+</table>
+
+<h5>Lifecycle Callbacks (BrokerEventCallbacks)</h5>
+
+<table border="1" cellpadding="6" cellspacing="0">
+    <thead>
+        <tr>
+            <th>Callback</th>
+            <th>When It Fires</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>onConnectionStarted(connection)</code></td>
+            <td>Successfully connected to the broker</td>
+        </tr>
+        <tr>
+            <td><code>onConnectionFailed(error)</code></td>
+            <td>Connection attempt failed or auto-reconnect exhausted</td>
+        </tr>
+        <tr>
+            <td><code>onDisconnected()</code></td>
+            <td>Disconnected from the broker (after explicit disconnect or final failure)</td>
+        </tr>
+        <tr>
+            <td><code>onReconnecting(error)</code></td>
+            <td>SignalR is attempting to auto-reconnect</td>
+        </tr>
+        <tr>
+            <td><code>onReconnected(connectionId)</code></td>
+            <td>SignalR successfully auto-reconnected</td>
+        </tr>
+    </tbody>
+</table>
+
+<h4>StreamConnector.updateAccessToken(newToken?)</h4>
+
+<p>
+    Update the access token. If the new token differs from the current one and the connection is active,
+    the library automatically reconnects and resubscribes all active subscriptions.
+    If no argument is passed, the <code>accessTokenFactory</code> is called to get the latest token.
+</p>
+
+<h4>StreamConnector.addStreamSubscription(subscription, timeout?)</h4>
+
+<p>
+    Register a subscription and begin receiving events. Connects to the broker automatically if not already connected.
+    The optional <code>timeout</code> parameter (in milliseconds) causes the promise to reject with
+    <code>Error('timeout')</code> if the subscription is not established in time.
+</p>
+
+<h4>StreamConnector.removeStreamSubscription(subscription)</h4>
+
+<p>
+    Unsubscribe and remove a subscription. Accepts a <code>StreamSubscription</code> instance or its string ID
+    (e.g. <code>'Conversation::my-conversation-id'</code>).
+    When the last subscription is removed, the broker connection is automatically closed.
+</p>
+
+<h4>StreamConnector.getStreamSubscriptions()</h4>
+
+<p>Returns an array of all currently active <code>StreamSubscription</code> instances.</p>
+
+<h4>StreamConnector.publishTopicIfConnected(topic, data)</h4>
+
+<p>
+    Publish data to a topic. Only works if currently connected; rejects with <code>'Not connected'</code> otherwise.
+</p>
+
+<hr>
+
+<h3>StreamSubscription</h3>
+
+<p>Represents a single subscription to a broker topic. Create an instance with a configuration object:</p>
+
+<pre><code>const subscription = new StreamSubscription({
+    id: 'Conversation::my-conversation-id',
+    fromEventId: 1,
+    onDataReceived: (events, receivedAs) =&gt; {
+        console.log('Received:', receivedAs, events);
+    },
+    onSubscriptionStart: () =&gt; {
+        console.log('Subscription is live');
+    },
+    onSubscriptionEnd: () =&gt; {
+        console.log('Subscription ended');
+    },
+    onSubscriptionStreamComplete: () =&gt; {
+        console.log('Stream completed');
+    },
+    onSubscriptionError: (err) =&gt; {
+        console.error('Stream error:', err);
+    },
+    options: {
+        topicProperty: 'id',
+        eventIdProperty: 'eventId',
+        getMethod: 'Get',
+        streamMethod: 'StreamingGet'
+    }
+});</code></pre>
+
+<h5>Subscription Configuration</h5>
+
+<table border="1" cellpadding="6" cellspacing="0">
+    <thead>
+        <tr>
+            <th>Property</th>
+            <th>Type</th>
+            <th>Description</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>id</code></td>
+            <td><code>string</code></td>
+            <td>
+                Topic identifier using the pattern <code>Type::conversationId</code>.
+                Valid types: <code>Conversation</code>, <code>Allocation</code>, <code>MetaData</code>.
+            </td>
+        </tr>
+        <tr>
+            <td><code>fromEventId</code></td>
+            <td><code>number</code></td>
+            <td>
+                Start receiving from this event ID. Use <code>1</code> to get full history, or a higher number to
+                resume.
+                A negative value fetches the N most recent events (e.g. <code>-10</code> fetches the last 10).
+            </td>
+        </tr>
+        <tr>
+            <td><code>onDataReceived</code></td>
+            <td><code>(events, receivedAs) =&gt; void</code></td>
+            <td>Called when events arrive. <code>events</code> is an array; <code>receivedAs</code> is a
+                <code>StreamEventTypes</code> value.</td>
+        </tr>
+        <tr>
+            <td><code>onSubscriptionStart</code></td>
+            <td><code>() =&gt; void</code></td>
+            <td>Called when the real-time stream is established.</td>
+        </tr>
+        <tr>
+            <td><code>onSubscriptionEnd</code></td>
+            <td><code>() =&gt; void</code></td>
+            <td>Called when the subscription is removed.</td>
+        </tr>
+        <tr>
+            <td><code>onSubscriptionStreamComplete</code></td>
+            <td><code>() =&gt; void</code></td>
+            <td>Called when the server-side stream completes.</td>
+        </tr>
+        <tr>
+            <td><code>onSubscriptionError</code></td>
+            <td><code>(err) =&gt; void</code></td>
+            <td>Called on stream errors (network failure, token expiry, etc.).</td>
+        </tr>
+        <tr>
+            <td><code>streamingSubscribeOnly</code></td>
+            <td><code>boolean</code></td>
+            <td>Override the connector-level setting for this subscription.</td>
+        </tr>
+        <tr>
+            <td><code>streamingSubscribeOnResume</code></td>
+            <td><code>boolean</code></td>
+            <td>Override the connector-level setting for this subscription.</td>
+        </tr>
+    </tbody>
+</table>
+
+<h5>Subscription Options</h5>
+
+<p>The <code>options</code> object configures how the subscription communicates with the SignalR hub:</p>
+
+<table border="1" cellpadding="6" cellspacing="0">
+    <thead>
+        <tr>
+            <th>Option</th>
+            <th>Default</th>
+            <th>Description</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>topicProperty</code></td>
+            <td><code>'topic'</code></td>
+            <td>Property name sent to the hub to identify the topic. For Puzzel Chat, use <code>'id'</code>.</td>
+        </tr>
+        <tr>
+            <td><code>eventIdProperty</code></td>
+            <td><code>'id'</code></td>
+            <td>Property name on incoming events that holds the event sequence number. For Puzzel Chat, use
+                <code>'eventId'</code>.</td>
+        </tr>
+        <tr>
+            <td><code>topicStartEventId</code></td>
+            <td><code>1</code></td>
+            <td>The event ID that represents the beginning of a topic.</td>
+        </tr>
+        <tr>
+            <td><code>getMethod</code></td>
+            <td><code>'Get'</code></td>
+            <td>SignalR hub method for fetching topic history.</td>
+        </tr>
+        <tr>
+            <td><code>streamMethod</code></td>
+            <td><code>'Subscribe'</code></td>
+            <td>SignalR hub method for subscribing to real-time events. For Puzzel Chat, use
+                <code>'StreamingGet'</code>.</td>
+        </tr>
+    </tbody>
+</table>
+
+<p>
+    The <code>id</code> property value uses the format <code>Type::conversationId</code>.
+    The library splits this on <code>::</code> and sends <code>type</code> and the topic identifier as separate
+    parameters to the SignalR hub methods.
+</p>
+
+<hr>
+
+<h3>StreamEventTypes</h3>
+
+<p>Constants describing how data was received, passed as the second argument to <code>onDataReceived</code>:</p>
+
+<table border="1" cellpadding="6" cellspacing="0">
+    <thead>
+        <tr>
+            <th>Constant</th>
+            <th>Value</th>
+            <th>Meaning</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>StreamEventTypes.STATE</code></td>
+            <td><code>'state'</code></td>
+            <td>Full topic history fetched on initial subscription</td>
+        </tr>
+        <tr>
+            <td><code>StreamEventTypes.STREAM</code></td>
+            <td><code>'stream'</code></td>
+            <td>A single real-time event from the live stream</td>
+        </tr>
+        <tr>
+            <td><code>StreamEventTypes.STREAMED_CHUNK</code></td>
+            <td><code>'chunk'</code></td>
+            <td>Partial history fetched when resuming mid-topic</td>
+        </tr>
+    </tbody>
+</table>
+
+<hr>
+
+<h2>REST API Endpoints</h2>
+
+<p>
+    The following REST endpoints complement the streaming connection.
+    All requests require the <code>Authorization: Bearer {access_token}</code> header
+    and use <code>Content-Type: application/json</code> unless noted otherwise.
+    The base URL is <code>https://app-commsrv.puzzel.com/api</code>.
+</p>
+
+<h3>Send a Chat Message</h3>
+
+<table border="1" cellpadding="6" cellspacing="0">
+    <tr>
+        <td><strong>Endpoint</strong></td>
+        <td><code>POST /conversation/{conversationId}/Message</code></td>
+    </tr>
+</table>
+
+<p>Request body:</p>
+
+<pre><code>{
+    "content": "Hello, I need help with my order.",
+    "nickName": "Visitor"
+}</code></pre>
+
+<p>
+    Returns a JSON object with <code>eventId</code> confirming the message was accepted.
+    The message will also appear on the <code>Conversation</code> stream subscription as an incoming event.
+</p>
+
+<h3>Send Metadata Events</h3>
+
+<table border="1" cellpadding="6" cellspacing="0">
+    <tr>
+        <td><strong>Endpoint</strong></td>
+        <td><code>POST /MetaData/{conversationId}</code></td>
+    </tr>
+</table>
+
+<p>
+    Metadata events broadcast real-time status updates to conversation participants.
+    The following standard event types are used:
+</p>
+
+<table border="1" cellpadding="6" cellspacing="0">
+    <thead>
+        <tr>
+            <th>Event Type</th>
+            <th>Description</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>typingEvent</code></td>
+            <td>Signals that a participant is currently typing</td>
+        </tr>
+        <tr>
+            <td><code>participantJoinEvent</code></td>
+            <td>Signals that a participant has joined the conversation</td>
+        </tr>
+        <tr>
+            <td><code>participantLeaveEvent</code></td>
+            <td>Signals that a participant has left the conversation</td>
+        </tr>
+    </tbody>
+</table>
+
+<p>Example request body for a typing indicator:</p>
+
+<pre><code>{
+    "senderName": "visitor",
+    "type": "typingEvent"
+}</code></pre>
+
+<p>
+    Metadata events from other participants (e.g. agent typing, agent joining) are received
+    through the <code>MetaData::{conversationId}</code> stream subscription.
+</p>
+
+<h3>Request an Agent</h3>
+
+<table border="1" cellpadding="6" cellspacing="0">
+    <tr>
+        <td><strong>Endpoint</strong></td>
+        <td><code>PUT /conversation/{conversationId}/route/{queueKey}</code></td>
+    </tr>
+</table>
+
+<p>
+    Routes the conversation to the specified queue, requesting an agent.
+    The <code>queueKey</code> is your Puzzel Chat Queue Key.
+    The request body may contain request variables (visitor claims / form data) as an array of key-value pairs.
+</p>
+
+<p>
+    After routing, subscribe to the <code>Allocation::{conversationId}</code> stream to receive
+    real-time updates on agent assignment status.
+</p>
+
+<h3>Check Queue / Opening Hours</h3>
+
+<table border="1" cellpadding="6" cellspacing="0">
+    <tr>
+        <td><strong>Endpoint</strong></td>
+        <td><code>GET /queue/info/{queueKey}</code></td>
+    </tr>
+</table>
+
+<p>Returns information about the queue status, including whether the queue is open and agent availability.</p>
+
+<h3>Disconnect from Conversation</h3>
+
+<table border="1" cellpadding="6" cellspacing="0">
+    <tr>
+        <td><strong>Endpoint</strong></td>
+        <td><code>DELETE /conversation/{conversationId}/disconnect</code></td>
+    </tr>
+</table>
+
+<p>Ends the visitor's participation in the conversation. Clean up stream subscriptions after disconnecting.</p>
+
+<hr>
+
+<h2>Complete Example</h2>
+
+<p>This example demonstrates the full lifecycle: authenticate, connect to streaming, subscribe to topics, send messages
+    via REST, and clean up.</p>
+
+<pre><code>import { StreamConnector, StreamSubscription, StreamEventTypes, StreamErrors } from 'chat-streaming-lib';
+
+const BROKER_URL = 'https://app-commsrv.puzzel.com/hubs/v1/messagebroker';
+const API_BASE = 'https://app-commsrv.puzzel.com/api';
+const IDP_URL = 'https://app-consumeridp.puzzel.com/connect/token';
+
+const CUSTOMER_ID = 'YOUR_CUSTOMER_ID';
+const QUEUE_KEY = 'YOUR_QUEUE_KEY';
+
+// ---------------------------------------------------------------
+// 1. Authenticate
+// ---------------------------------------------------------------
+async function getToken() {
+    const response = await fetch(IDP_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+            client_id: 'oneplatform_engage',
+            grant_type: 'visitor',
+            tenant_id: CUSTOMER_ID,
+        }),
+    });
+    return await response.json();
+    // Returns: { access_token, refresh_token, expires_in, ... }
+}
+
+let tokenData = await getToken();
+let accessToken = tokenData.access_token;
+
+// ---------------------------------------------------------------
+// 2. Initialize the StreamConnector
+// ---------------------------------------------------------------
+await StreamConnector.init(
+    BROKER_URL,
+    {
+        brokerTransport: 'WebSockets',
+        accessTokenFactory: () =&gt; accessToken,
+    },
+    {
+        onConnectionStarted: () =&gt; console.log('Connected to broker'),
+        onConnectionFailed: (err) =&gt; console.error('Connection failed:', err),
+        onDisconnected: () =&gt; console.log('Disconnected from broker'),
+        onReconnecting: (err) =&gt; console.warn('Reconnecting...', err),
+        onReconnected: () =&gt; console.log('Reconnected'),
+    }
+);
+
+// ---------------------------------------------------------------
+// 3. Generate a conversation ID and request an agent
+// ---------------------------------------------------------------
+const conversationId = crypto.randomUUID();
+
+await fetch(`${API_BASE}/conversation/${conversationId}/route/${QUEUE_KEY}`, {
+    method: 'PUT',
+    headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+    },
+    body: JSON.stringify([]),
+});
+
+// ---------------------------------------------------------------
+// 4. Shared subscription options for Puzzel Chat
+// ---------------------------------------------------------------
+const puzzelChatOptions = {
+    options: {
+        topicStartEventId: 1,
+        topicProperty: 'id',
+        eventIdProperty: 'eventId',
+        getMethod: 'Get',
+        streamMethod: 'StreamingGet',
+    }
+};
+
+// ---------------------------------------------------------------
+// 5. Subscribe to Allocation (agent assignment updates)
+// ---------------------------------------------------------------
+const allocationSub = new StreamSubscription({
+    ...puzzelChatOptions,
+    id: `Allocation::${conversationId}`,
+    fromEventId: 1,
+    onDataReceived: (events, receivedAs) =&gt; {
+        console.log('Allocation event:', receivedAs, events);
+        // Handle agent assignment status updates here
+    },
+    onSubscriptionStart: () =&gt; console.log('Allocation stream started'),
+});
+
+await StreamConnector.addStreamSubscription(allocationSub, 5000);
+
+// ---------------------------------------------------------------
+// 6. Subscribe to Conversation (chat messages)
+// ---------------------------------------------------------------
+const conversationSub = new StreamSubscription({
+    ...puzzelChatOptions,
+    id: `Conversation::${conversationId}`,
+    fromEventId: 1,
+    onDataReceived: (events, receivedAs) =&gt; {
+        if (receivedAs === StreamEventTypes.STATE) {
+            console.log('Full conversation history:', events);
+        } else {
+            console.log('New message:', events);
+        }
+    },
+    onSubscriptionStart: () =&gt; console.log('Conversation stream started'),
+    onSubscriptionError: (err) =&gt; console.error('Conversation stream error:', err),
+});
+
+await StreamConnector.addStreamSubscription(conversationSub, 5000);
+
+// ---------------------------------------------------------------
+// 7. Subscribe to MetaData (typing indicators, join/leave)
+// ---------------------------------------------------------------
+const metaDataSub = new StreamSubscription({
+    ...puzzelChatOptions,
+    id: `MetaData::${conversationId}`,
+    fromEventId: 1,
+    onDataReceived: (events, receivedAs) =&gt; {
+        console.log('MetaData event:', receivedAs, events);
+        // Handle typing indicators, participant join/leave, etc.
+    },
+    onSubscriptionStart: () =&gt; console.log('MetaData stream started'),
+});
+
+await StreamConnector.addStreamSubscription(metaDataSub, 5000);
+
+// ---------------------------------------------------------------
+// 8. Send a message via REST
+// ---------------------------------------------------------------
+await fetch(`${API_BASE}/conversation/${conversationId}/Message`, {
+    method: 'POST',
+    headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+        content: 'Hello, I need help!',
+        nickName: 'Visitor',
+    }),
+});
+
+// ---------------------------------------------------------------
+// 9. Send a typing indicator via REST
+// ---------------------------------------------------------------
+await fetch(`${API_BASE}/MetaData/${conversationId}`, {
+    method: 'POST',
+    headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+        senderName: 'visitor',
+        type: 'typingEvent',
+    }),
+});
+
+// ---------------------------------------------------------------
+// 10. Token refresh
+// ---------------------------------------------------------------
+async function refreshToken() {
+    const response = await fetch(IDP_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+            client_id: 'oneplatform_engage',
+            grant_type: 'refresh_token',
+            refresh_token: tokenData.refresh_token,
+            tenant_id: CUSTOMER_ID,
+        }),
+    });
+    tokenData = await response.json();
+    accessToken = tokenData.access_token;
+    await StreamConnector.updateAccessToken(accessToken);
+}
+
+// ---------------------------------------------------------------
+// 11. Clean up when done
+// ---------------------------------------------------------------
+function cleanup() {
+    StreamConnector.removeStreamSubscription(`Allocation::${conversationId}`);
+    StreamConnector.removeStreamSubscription(`Conversation::${conversationId}`);
+    StreamConnector.removeStreamSubscription(`MetaData::${conversationId}`);
+}</code></pre>
+
+<hr>
+
+<h2>Connection Lifecycle and Error Handling</h2>
+
+<h3>Automatic Reconnection</h3>
+
+<p>
+    The library handles reconnection at two levels:
+</p>
+
+<ol>
+    <li>
+        <strong>SignalR auto-reconnect:</strong> When the WebSocket connection drops, SignalR automatically
+        attempts to reconnect using the <code>reconnectRetryPolicy</code> intervals (default:
+        <code>[0, 500, 3000, 5000, 10000]</code> ms). During this phase, the <code>onReconnecting</code>
+        callback fires. On success, <code>onReconnected</code> fires and all subscriptions are automatically
+        resubscribed.
+    </li>
+    <li>
+        <strong>Library-level reconnect:</strong> If SignalR auto-reconnect fails, the library enters its own
+        retry loop, attempting to reconnect every 10 seconds for up to 2 minutes (12 retries).
+        If this also fails, <code>onConnectionFailed</code> fires.
+    </li>
+</ol>
+
+<p>
+    You can provide a custom retry policy as either an array of delay values (in ms) or a SignalR
+    <code>IRetryPolicy</code> object with a <code>nextRetryDelayInMilliseconds(retryContext)</code> method:
+</p>
+
+<pre><code>await StreamConnector.init(BROKER_URL, {
+    accessTokenFactory: () =&gt; accessToken,
+    reconnectRetryPolicy: {
+        nextRetryDelayInMilliseconds: (retryContext) =&gt; {
+            if (retryContext.elapsedMilliseconds &gt; 15000) {
+                return null; // Stop retrying
+            }
+            return 1000 + Math.floor(Math.random() * 4000);
+        }
+    }
+}, callbacks);</code></pre>
+
+<h3>Error Handling</h3>
+
+<p>
+    Subscription errors from <code>addStreamSubscription</code> are returned as objects with the following shape:
+</p>
+
+<pre><code>{
+    errorCode: number,    // One of StreamErrors.*
+    errorMessage: string, // Human-readable description
+    err: unknown          // Original error from SignalR
+}</code></pre>
+
+<p>Handle them with try/catch:</p>
+
+<pre><code>try {
+    await StreamConnector.addStreamSubscription(subscription, 5000);
+} catch (error) {
+    if (error.errorCode === StreamErrors.BROKER_CONNECT_ERROR) {
+        console.error('Could not connect to broker');
+    } else if (error.errorCode === StreamErrors.TOPIC_SUBSCRIBE_ERROR) {
+        console.error('Could not subscribe to topic');
+    } else if (error.message === 'timeout') {
+        console.error('Subscription timed out');
+    }
+}</code></pre>
+
+<h3>StreamErrors</h3>
+
+<table border="1" cellpadding="6" cellspacing="0">
+    <thead>
+        <tr>
+            <th>Constant</th>
+            <th>Value</th>
+            <th>Description</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>BROKER_DISCONNECTED</code></td>
+            <td><code>0</code></td>
+            <td>The broker is disconnected</td>
+        </tr>
+        <tr>
+            <td><code>BROKER_CONNECT_ERROR</code></td>
+            <td><code>1</code></td>
+            <td>Failed to establish initial connection</td>
+        </tr>
+        <tr>
+            <td><code>BROKER_RECONNECT_ATTEMPT_ERROR</code></td>
+            <td><code>2</code></td>
+            <td>A reconnection attempt failed</td>
+        </tr>
+        <tr>
+            <td><code>BROKER_RECONNECT_FATAL_ERROR</code></td>
+            <td><code>3</code></td>
+            <td>All reconnection attempts exhausted</td>
+        </tr>
+        <tr>
+            <td><code>BROKER_INVALID_CONNECTION_ERROR</code></td>
+            <td><code>4</code></td>
+            <td>Connection is in an invalid state</td>
+        </tr>
+        <tr>
+            <td><code>TOPIC_GET_ERROR</code></td>
+            <td><code>5</code></td>
+            <td>Failed to fetch topic history</td>
+        </tr>
+        <tr>
+            <td><code>TOPIC_SUBSCRIBE_ERROR</code></td>
+            <td><code>6</code></td>
+            <td>Failed to subscribe to real-time stream</td>
+        </tr>
+        <tr>
+            <td><code>TOPIC_STREAM_OUT_OF_ORDER</code></td>
+            <td><code>7</code></td>
+            <td>Events received out of order (library automatically resubscribes)</td>
+        </tr>
+    </tbody>
+</table>
+
+<hr>
+
+<h2>Debugging</h2>
+
+<p>Enable debug logging in the browser by setting localStorage keys:</p>
+
+<pre><code>localStorage.setItem('pzl-streaming-debug', 'true');
+localStorage.setItem('pzl-broker-log-level', 'info');</code></pre>
+
+<p>Or pass <code>console</code> as the fourth argument to <code>init()</code>:</p>
+
+<pre><code>await StreamConnector.init(brokerUrl, options, callbacks, console);</code></pre>
+
+<p>An unminified ESM bundle is available for easier debugging:</p>
+
+<pre><code>import { StreamConnector } from 'chat-streaming-lib/debug';</code></pre>
