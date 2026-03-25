@@ -1,8 +1,8 @@
 {
   "name": "@Puzzel/chat-streaming-js",
   "version": "2.0.0",
-  "description": "Internal Streaming library for Puzzel",
-  "license": "UNLICENSED",
+  "description": "Streaming library for PCC Chat (new)",
+  "license": "MIT",
   "main": "./dist/pzl-stream-lib.cjs",
   "module": "./dist/pzl-stream-lib.mjs",
   "types": "./dist/pzl-stream-lib.d.mts",

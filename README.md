@@ -5,7 +5,7 @@ A managed streaming and subscription layer over `@microsoft/signalr` for Puzzel'
 ## Installation
 
 ```bash
-npm install pzl-stream-lib @microsoft/signalr
+npm install chat-stream-js @microsoft/signalr
 ```
 
 `@microsoft/signalr` is a **peer dependency** and must be installed alongside this library.
@@ -13,11 +13,11 @@ npm install pzl-stream-lib @microsoft/signalr
 ## Quick Start
 
 ```typescript
-import { StreamConnector, StreamSubscription, StreamEventTypes } from 'pzl-stream-lib';
+import { StreamConnector, StreamSubscription, StreamEventTypes } from 'chat-stream-js';
 
 // 1. Initialize the connector
 await StreamConnector.init(
-  'https://broker.example.com/hub',
+  'https://app-commsrv.puzzel.com/hubs/v1',
   {
     brokerTransport: 'WebSockets',
     access_token: 'your-token',
