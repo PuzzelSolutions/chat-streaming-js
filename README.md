@@ -1,11 +1,11 @@
-# pzl-stream-js
+# @Puzzel/chat-streaming-js
 
 A managed streaming and subscription layer over `@microsoft/signalr` for Puzzel's messaging system.
 
 ## Installation
 
 ```bash
-npm install chat-stream-js @microsoft/signalr
+npm install @Puzzel/chat-streaming-js @microsoft/signalr
 ```
 
 `@microsoft/signalr` is a **peer dependency** and must be installed alongside this library.
@@ -13,7 +13,7 @@ npm install chat-stream-js @microsoft/signalr
 ## Quick Start
 
 ```typescript
-import { StreamConnector, StreamSubscription, StreamEventTypes } from 'chat-stream-js';
+import { StreamConnector, StreamSubscription, StreamEventTypes } from '@Puzzel/chat-streaming-js';
 
 // 1. Initialize the connector
 await StreamConnector.init(
@@ -193,7 +193,7 @@ await StreamConnector.init(brokerUrl, options, handlers, console);
 An unminified ESM bundle is available for debugging:
 
 ```typescript
-import { StreamConnector } from 'pzl-stream-lib/debug';
+import { StreamConnector } from '@Puzzel/chat-streaming-js/debug';
 ```
 
 ---

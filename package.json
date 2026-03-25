@@ -3,25 +3,25 @@
   "version": "2.0.0",
   "description": "Streaming library for PCC Chat (new)",
   "license": "MIT",
-  "main": "./dist/pzl-stream-lib.cjs",
-  "module": "./dist/pzl-stream-lib.mjs",
-  "types": "./dist/pzl-stream-lib.d.mts",
+  "main": "./dist/chat-streaming-js.cjs",
+  "module": "./dist/chat-streaming-js.mjs",
+  "types": "./dist/chat-streaming-js.d.mts",
   "sideEffects": false,
   "exports": {
     ".": {
       "import": {
-        "types": "./dist/pzl-stream-lib.d.mts",
-        "default": "./dist/pzl-stream-lib.mjs"
+        "types": "./dist/chat-streaming-js.d.mts",
+        "default": "./dist/chat-streaming-js.mjs"
       },
       "require": {
-        "types": "./dist/pzl-stream-lib.d.cts",
-        "default": "./dist/pzl-stream-lib.cjs"
+        "types": "./dist/chat-streaming-js.d.cts",
+        "default": "./dist/chat-streaming-js.cjs"
       }
     },
     "./debug": {
       "import": {
-        "types": "./dist/pzl-stream-lib.d.mts",
-        "default": "./dist/pzl-stream-lib.js"
+        "types": "./dist/chat-streaming-js.d.mts",
+        "default": "./dist/chat-streaming-js.js"
       }
     }
   },
