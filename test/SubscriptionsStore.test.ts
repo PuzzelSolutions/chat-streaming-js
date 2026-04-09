@@ -1,12 +1,13 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import * as Store from '../src/SubscriptionsStore';
+import { createSubscriptionsStore } from '../src/SubscriptionsStore';
 import StreamSubscription from '../src/StreamSubscription';
 
-function makeSub(topic) {
+function makeSub(topic: string): StreamSubscription {
   return new StreamSubscription({ topic });
 }
 
-describe('SubscriptionsStore', () => {
+describe('SubscriptionsStore (module-level singleton)', () => {
   beforeEach(() => {
     Store.removeAll();
   });
@@ -94,8 +95,9 @@ describe('SubscriptionsStore', () => {
       expect(Store.remove(null)).toBe(false);
     });
 
-    it('returns false for string input', () => {
-      expect(Store.remove('topic-1')).toBe(false);
+    it('returns false for non-object input', () => {
+      // Passing a non-subscription value is a runtime guard; cast needed for TS.
+      expect(Store.remove('topic-1' as unknown as StreamSubscription)).toBe(false);
     });
 
     it('does not affect other subscriptions', () => {
@@ -114,5 +116,23 @@ describe('SubscriptionsStore', () => {
       Store.removeAll();
       expect(Store.getAll()).toHaveLength(0);
     });
+  });
+});
+
+describe('createSubscriptionsStore (factory)', () => {
+  it('returns an isolated store — mutations do not affect other instances', () => {
+    const storeA = createSubscriptionsStore();
+    const storeB = createSubscriptionsStore();
+
+    storeA.add(makeSub('topic-1'));
+    expect(storeA.getAll()).toHaveLength(1);
+    expect(storeB.getAll()).toHaveLength(0);
+  });
+
+  it('isolated store does not share state with the module singleton', () => {
+    Store.removeAll();
+    const isolated = createSubscriptionsStore();
+    isolated.add(makeSub('isolated-topic'));
+    expect(Store.getAll()).toHaveLength(0);
   });
 });

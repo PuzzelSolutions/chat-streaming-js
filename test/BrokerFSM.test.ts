@@ -1,11 +1,12 @@
 import { describe, it, expect, vi } from 'vitest';
 import { initBrokerConnectionFsm } from '../src/BrokerFSM';
+import type { BrokerEventCallbacks, BrokerExternals } from '../src/BrokerFSM';
 import { noDebug } from '../src/StreamUtils';
 
-function createFsm(overrides = {}, callbacks = {}) {
-  const externals = {
+function createFsm(overrides: Partial<BrokerExternals> = {}, callbacks: BrokerEventCallbacks = {}) {
+  const externals: BrokerExternals = {
     _connect: vi.fn(),
-    reSubscribeAll: vi.fn(),
+    reSubscribeAll: vi.fn().mockResolvedValue([]),
     unSubscribeAll: vi.fn(),
     ...overrides,
   };

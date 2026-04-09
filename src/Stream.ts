@@ -3,7 +3,6 @@ import type StreamSubscription from './StreamSubscription';
 
 interface PublishOptions {
   publishMethod?: string;
-  [key: string]: unknown;
 }
 
 function parseTopicValue(subscription: StreamSubscription): [string, string | undefined] {

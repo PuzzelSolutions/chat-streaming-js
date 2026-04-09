@@ -34,7 +34,7 @@ describe('mergeDeep', () => {
   });
 
   it('merges arrays with unique values', () => {
-    const result = mergeDeep({ a: [1, 2] }, { a: [2, 3] });
+    const result = mergeDeep({ a: [1, 2] }, { a: [2, 3] }) as { a: number[] };
     expect(result.a).toEqual(expect.arrayContaining([1, 2, 3]));
     expect(result.a).toHaveLength(3);
   });
@@ -73,7 +73,7 @@ describe('promiseTimeout', () => {
   });
 
   it('rejects with timeout error if promise takes too long', async () => {
-    const slow = new Promise((resolve) => setTimeout(resolve, 500));
+    const slow = new Promise<void>((resolve) => setTimeout(resolve, 500));
     await expect(promiseTimeout(slow, 10)).rejects.toThrow('timeout');
   });
 });

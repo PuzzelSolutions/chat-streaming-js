@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import StreamSubscription from '../src/StreamSubscription';
+import type { StreamSubscriptionConfig } from '../src/StreamSubscription';
+import type { StreamEventType } from '../src/StreamEventTypes';
 
 describe('StreamSubscription', () => {
   describe('default values', () => {
@@ -30,7 +32,7 @@ describe('StreamSubscription', () => {
     it('has noop onDataReceived by default', () => {
       const sub = new StreamSubscription({ topic: 't' });
       expect(typeof sub.onDataReceived).toBe('function');
-      expect(sub.onDataReceived()).toBeUndefined();
+      expect(sub.onDataReceived([], 'state' as StreamEventType)).toBeUndefined();
     });
 
     it('has null lifecycle hooks by default', () => {
@@ -50,7 +52,7 @@ describe('StreamSubscription', () => {
       const sub = new StreamSubscription({
         options: { topicProperty: 'channel' },
         channel: 'my-channel',
-      });
+      } as StreamSubscriptionConfig);
       expect(sub.getSubscriptionId()).toBe('my-channel');
     });
   });
@@ -91,8 +93,8 @@ describe('StreamSubscription', () => {
       expect(sub.options.streamMethod).toBe('Subscribe');
     });
 
-    it('accepts custom onDataReceived', () => {
-      const handler = (events, type) => ({ events, type });
+    it('accepts custom onDataReceived with correct StreamEventType parameter', () => {
+      const handler = (events: unknown[], type: StreamEventType) => ({ events, type });
       const sub = new StreamSubscription({
         topic: 'test',
         onDataReceived: handler,

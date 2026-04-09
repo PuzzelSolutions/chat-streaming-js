@@ -119,8 +119,8 @@ Throws `"Not connected"` if broker is not connected.
 | Property                     | Type (JS)                | Type (Kotlin)              | Type (Swift)             | Default                            |
 | ---------------------------- | ------------------------ | -------------------------- | ------------------------ | ---------------------------------- |
 | `brokerTransport`            | `BrokerTransport`        | `BrokerTransport`          | `BrokerTransport`        | `WebSockets`                       |
-| `brokerLogLevel`             | `string`                 | `String`                   | `String`                 | `"none"`                           |
-| `accessToken`                | `string?`                | `String?`                  | `String?`                | `nil`                              |
+| `brokerLogLevel`             | `BrokerLogLevel`         | `String`                   | `String`                 | `"none"`                           |
+| `access_token`               | `string?`                | `String?`                  | `String?`                | `nil`                              |
 | `accessTokenFactory`         | `() => Promise<string?>` | `(suspend () -> String?)?` | `(() async -> String?)?` | `nil`                              |
 | `streamingSubscribeOnly`     | `boolean`                | `Boolean`                  | `Bool`                   | `false`                            |
 | `streamingSubscribeOnResume` | `boolean`                | `Boolean`                  | `Bool`                   | `true`                             |
@@ -171,9 +171,9 @@ Throws `"Not connected"` if broker is not connected.
 
 ## StreamError
 
-| JS                                                          | Kotlin                                                              | Swift                                                                |
-| ----------------------------------------------------------- | ------------------------------------------------------------------- | -------------------------------------------------------------------- |
-| `{ errorCode: number, errorMessage: string, err: unknown }` | `class StreamError(errorCode, message, cause?)` extends `Exception` | `struct StreamError: LocalizedError` with `code`, `message`, `cause` |
+| JS                                                                           | Kotlin                                                              | Swift                                                                |
+| ---------------------------------------------------------------------------- | ------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| `class StreamError extends Error` with `errorCode`, `message`, `err` fields | `class StreamError(errorCode, message, cause?)` extends `Exception` | `struct StreamError: LocalizedError` with `code`, `message`, `cause` |
 
 ## BrokerEventCallbacks
 

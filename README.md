@@ -17,7 +17,7 @@ import { StreamConnector, StreamSubscription, StreamEventTypes } from '@puzzel/s
 
 // 1. Initialize the connector
 await StreamConnector.init(
-  'https://app-commsrv.puzzel.com/hubs/v1/messagebroker',
+  'https://your-broker-endpoint/hubs/v1/messagebroker',
   {
     brokerTransport: 'WebSockets',
     access_token: 'your-token',
@@ -97,7 +97,24 @@ Returns all currently active `StreamSubscription` instances.
 
 #### `publishTopicIfConnected(topic, data)`
 
-Publish data to a topic. Rejects with `'Not connected'` if the broker is not connected.
+Publish data to a topic. Rejects with a `StreamError` (code `BROKER_DISCONNECTED`) if the broker is not connected.
+
+#### `destroy()`
+
+Disconnect from the broker and reset all internal state. After calling this, `init` may be called again to start fresh. Useful for logout flows or test teardown.
+
+---
+
+### `createStreamConnector()`
+
+Returns a new, isolated `StreamConnectorHandle` instance with its own connection and subscription state. Use this instead of the default `StreamConnector` singleton when you need multiple simultaneous broker connections or test isolation.
+
+```typescript
+import { createStreamConnector } from '@puzzel/streaming-lib';
+
+const connector = createStreamConnector();
+await connector.init('https://your-broker-endpoint/hub');
+```
 
 ---
 
@@ -157,27 +174,27 @@ Numeric error codes used in rejection payloads:
 
 ## Error Handling
 
-Subscription errors are returned as objects with the shape:
+Domain errors are thrown as `StreamError` instances (which extend `Error`):
 
 ```typescript
-{
-  errorCode: number; // One of StreamErrors.*
-  errorMessage: string; // Human-readable description
-  err: unknown; // Original error from SignalR or the broker
-}
-```
+import { StreamConnector, StreamError, StreamErrors } from '@puzzel/streaming-lib';
 
-Handle them with try/catch or `.catch()`:
-
-```typescript
 try {
   await StreamConnector.addStreamSubscription(subscription, 10000);
-} catch (error) {
-  if (error.errorCode === StreamErrors.BROKER_CONNECT_ERROR) {
-    console.error('Could not connect to broker');
+} catch (e) {
+  if (e instanceof StreamError) {
+    if (e.errorCode === StreamErrors.BROKER_CONNECT_ERROR) {
+      console.error('Could not connect to broker:', e.message, e.err);
+    }
   }
 }
 ```
+
+| Property    | Type              | Description                              |
+| ----------- | ----------------- | ---------------------------------------- |
+| `errorCode` | `StreamErrorCode` | Numeric code — one of `StreamErrors.*`   |
+| `message`   | `string`          | Human-readable description               |
+| `err`       | `unknown`         | Original error from SignalR or the broker |
 
 ---
 
@@ -214,4 +231,4 @@ npm test            # Run Vitest test suite
 
 ## License
 
-UNLICENSED -- Internal Puzzel library.
+MIT — see [LICENSE](LICENSE) for details.

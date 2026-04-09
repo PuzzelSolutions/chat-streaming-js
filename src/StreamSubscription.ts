@@ -1,4 +1,5 @@
 import { mergeDeep } from './StreamUtils';
+import type { StreamEventType } from './StreamEventTypes';
 
 /** Configuration for how a subscription interacts with the broker. */
 export interface StreamSubscriptionOptions {
@@ -14,7 +15,6 @@ export interface StreamSubscriptionOptions {
   getReverseMethod?: string;
   /** SignalR hub method for subscribing to real-time events (default `'Subscribe'`). */
   streamMethod: string;
-  [key: string]: unknown;
 }
 
 /**
@@ -25,14 +25,16 @@ export interface StreamSubscriptionConfig {
   topic?: string;
   options?: Partial<StreamSubscriptionOptions>;
   fromEventId?: number | null;
-  onDataReceived?: (events: unknown[], receivedAs: string) => void;
+  onDataReceived?: (events: unknown[], receivedAs: StreamEventType) => void;
   onSubscriptionStart?: (() => void) | null;
   onSubscriptionEnd?: (() => void) | null;
   onSubscriptionStreamComplete?: (() => void) | null;
   onSubscriptionError?: ((err: unknown) => void) | null;
+  /** Extra properties passed through to the SignalR hub method payload. */
   extraProps?: Record<string, unknown>;
   streamingSubscribeOnly?: boolean;
   streamingSubscribeOnResume?: boolean;
+  /** Custom topic property key — use this when `topicProperty` is not `'topic'`. */
   [key: string]: unknown;
 }
 
@@ -43,7 +45,7 @@ class DefaultSubscription {
   subscribeInvocationId: number;
   subscriberRef: { dispose: () => void } | null;
   lastReceivedEventId: number;
-  onDataReceived: (events: unknown[], receivedAs: string) => void;
+  onDataReceived: (events: unknown[], receivedAs: StreamEventType) => void;
   onSubscriptionStart: (() => void) | null;
   onSubscriptionEnd: (() => void) | null;
   onSubscriptionStreamComplete?: (() => void) | null;
