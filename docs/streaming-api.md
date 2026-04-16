@@ -143,7 +143,7 @@ Returns a `Promise<string>` that resolves to `'disconnected'` (first init),
 | `brokerLogLevel`             | `string`                          | `'none'`                      | SignalR log level: `'trace'`, `'debug'`, `'info'`, `'warn'`, `'error'`, `'critical'`, `'none'`                                                     |
 | `streamingSubscribeOnly`     | `boolean`                         | `false`                       | If `true`, skips fetching topic history on subscribe and only receives new events                                                                  |
 | `streamingSubscribeOnResume` | `boolean`                         | `true`                        | If `true`, skips re-fetching history when resuming a subscription mid-topic                                                                        |
-| `reconnectRetryPolicy`       | `number[] \| IRetryPolicy`        | `[0, 500, 3000, 5000, 10000]` | SignalR auto-reconnect intervals in milliseconds, or a custom retry policy object                                                                  |
+| `reconnectRetryPolicy`       | `number[]`                       | `[0, 500, 3000, 5000, 10000]` | SignalR auto-reconnect intervals in milliseconds                                                                  |
 
 ##### Lifecycle Callbacks (BrokerEventCallbacks)
 
@@ -239,6 +239,7 @@ The `options` object configures how the subscription communicates with the Signa
 | `eventIdProperty`   | `'id'`        | Property name on incoming events that holds the event sequence number. For Puzzel Chat, use `'eventId'`. |
 | `topicStartEventId` | `1`           | The event ID that represents the beginning of a topic.                                                   |
 | `getMethod`         | `'Get'`       | SignalR hub method for fetching topic history.                                                           |
+| `getReverseMethod`  | _(none)_      | Optional SignalR hub method for fetching topic history in reverse order (used when `fromEventId` is negative). |
 | `streamMethod`      | `'Subscribe'` | SignalR hub method for subscribing to real-time events. For Puzzel Chat, use `'StreamingGet'`.           |
 
 The `id` property value uses the format `Type::conversationId`.
@@ -553,25 +554,17 @@ The library handles reconnection at two levels:
    resubscribed.
 
 2. **Library-level reconnect:** If SignalR auto-reconnect fails, the library enters its own
-   retry loop, attempting to reconnect every 10 seconds for up to 2 minutes (12 retries).
+   retry loop, attempting to reconnect every 1 second for up to 1 minute (60 retries).
    If this also fails, `onConnectionFailed` fires.
 
-You can provide a custom retry policy as either an array of delay values (in ms) or a SignalR
-`IRetryPolicy` object with a `nextRetryDelayInMilliseconds(retryContext)` method:
+You can customise the SignalR auto-reconnect policy by passing an array of delay values (in ms):
 
 ```js
 await StreamConnector.init(
   BROKER_URL,
   {
     accessTokenFactory: () => accessToken,
-    reconnectRetryPolicy: {
-      nextRetryDelayInMilliseconds: (retryContext) => {
-        if (retryContext.elapsedMilliseconds > 15000) {
-          return null; // Stop retrying
-        }
-        return 1000 + Math.floor(Math.random() * 4000);
-      },
-    },
+    reconnectRetryPolicy: [0, 1000, 2000, 5000, 10000, 30000],
   },
   callbacks,
 );
@@ -579,13 +572,14 @@ await StreamConnector.init(
 
 ### Error Handling
 
-Subscription errors from `addStreamSubscription` are returned as objects with the following shape:
+Subscription errors from `addStreamSubscription` are thrown as `StreamError` instances, which
+extend the native `Error` class and carry the following fields:
 
 ```js
 {
-    errorCode: number,    // One of StreamErrors.*
-    errorMessage: string, // Human-readable description
-    err: unknown          // Original error from SignalR
+    errorCode: number,  // One of StreamErrors.*
+    message: string,    // Human-readable description (inherited from Error)
+    err: unknown        // Original error from SignalR
 }
 ```
 
@@ -595,10 +589,12 @@ Handle them with try/catch:
 try {
   await StreamConnector.addStreamSubscription(subscription, 5000);
 } catch (error) {
-  if (error.errorCode === StreamErrors.BROKER_CONNECT_ERROR) {
-    console.error('Could not connect to broker');
-  } else if (error.errorCode === StreamErrors.TOPIC_SUBSCRIBE_ERROR) {
-    console.error('Could not subscribe to topic');
+  if (error instanceof StreamError) {
+    if (error.errorCode === StreamErrors.BROKER_CONNECT_ERROR) {
+      console.error('Could not connect to broker');
+    } else if (error.errorCode === StreamErrors.TOPIC_SUBSCRIBE_ERROR) {
+      console.error('Could not subscribe to topic');
+    }
   } else if (error.message === 'timeout') {
     console.error('Subscription timed out');
   }
