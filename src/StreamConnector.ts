@@ -706,15 +706,27 @@ export function createStreamConnector(): StreamConnectorHandle {
     extraLoggingArg?: string,
   ): PreparedEventsData {
     if (debug && !debug.debugDisabled) {
-      let label: string;
+      const debugData: unknown[] = [];
       if (receivedAs === StreamEventTypes.STREAM) {
-        label = 'stream event';
+        const evt = events as Record<string, unknown>;
+        const eventType =
+          ((evt.data as Record<string, unknown>)?.type as string) || (evt.type as string);
+        const messageType =
+          ((evt.data as Record<string, unknown>)?.messageType as string) ||
+          (evt.messageType as string);
+        debugData.push(
+          'conversationData STREAM-event:',
+          eventType + (eventType === 'conversationMessage' ? ' (' + messageType + ')' : ''),
+        );
       } else if (receivedAs === StreamEventTypes.STREAMED_CHUNK) {
-        label = 'streamed chunk array';
+        debugData.push('conversationData STREAMED_CHUNK-array:');
+      } else if (receivedAs === StreamEventTypes.STATE) {
+        debugData.push('conversationData STATE-array:');
       } else {
-        label = 'state array';
+        debugData.push('conversationData (receivedAs = unknown)):');
       }
-      debug.log('streaming event (' + label + '):', events, extraLoggingArg);
+      debugData.push(events, extraLoggingArg);
+      debug.log(...debugData);
     }
 
     return {
@@ -746,30 +758,33 @@ export function createStreamConnector(): StreamConnectorHandle {
       );
     }
 
-    const newOptions: ConnectorOptions = {
-      publishMethod: 'Publish',
-      brokerUrl,
-      brokerTransport: initOptions.brokerTransport || 'WebSockets',
-      brokerLogLevel:
-        (brokerLogLevelOverride as BrokerLogLevel) || initOptions.brokerLogLevel || 'none',
-      streamingSubscribeOnly: !!initOptions.streamingSubscribeOnly,
-      streamingSubscribeOnResume: initOptions.streamingSubscribeOnResume !== false,
-      access_token: initOptions.access_token || null,
-      // Store the factory reference — it is called fresh on every _connect() invocation.
-      accessTokenFactory: initOptions.accessTokenFactory,
-      reconnectRetryPolicy: initOptions.reconnectRetryPolicy,
-      brokerEventHandlers,
-    };
+    const resolvedTransport = initOptions.brokerTransport || 'WebSockets';
+    const resolvedLogLevel =
+      (brokerLogLevelOverride as BrokerLogLevel) || initOptions.brokerLogLevel || 'none';
+    const resolvedSubscribeOnly = !!initOptions.streamingSubscribeOnly;
+    const resolvedSubscribeOnResume = initOptions.streamingSubscribeOnResume !== false;
+    const resolvedToken =
+      initOptions.access_token || (await initOptions.accessTokenFactory?.()) || null;
 
     const configChanged =
-      brokerUrl !== options.brokerUrl ||
-      newOptions.access_token !== options.access_token ||
-      newOptions.accessTokenFactory !== options.accessTokenFactory ||
-      newOptions.brokerTransport !== options.brokerTransport ||
-      newOptions.brokerLogLevel !== options.brokerLogLevel;
+      (brokerUrl && brokerUrl !== options.brokerUrl) ||
+      resolvedToken !== options.access_token ||
+      resolvedTransport !== options.brokerTransport ||
+      resolvedLogLevel !== options.brokerLogLevel;
 
     if (configChanged) {
-      options = newOptions;
+      options = {
+        ...options,
+        brokerUrl,
+        brokerTransport: resolvedTransport,
+        brokerLogLevel: resolvedLogLevel,
+        streamingSubscribeOnly: resolvedSubscribeOnly,
+        streamingSubscribeOnResume: resolvedSubscribeOnResume,
+        access_token: resolvedToken,
+        accessTokenFactory: initOptions.accessTokenFactory,
+        reconnectRetryPolicy: initOptions.reconnectRetryPolicy,
+        brokerEventHandlers,
+      };
       brokerConnection.setEventCallbacks(brokerEventHandlers);
 
       debug.log('Initializing StreamConnector');
@@ -802,10 +817,7 @@ export function createStreamConnector(): StreamConnectorHandle {
       throw new Error('StreamConnector not initialized. Call init() before updateAccessToken().');
     }
 
-    const resolvedToken =
-      new_access_token !== undefined
-        ? new_access_token
-        : ((await options.accessTokenFactory?.()) ?? null);
+    const resolvedToken = new_access_token || (await options.accessTokenFactory?.()) || null;
 
     if (resolvedToken !== options.access_token) {
       options.access_token = resolvedToken;
