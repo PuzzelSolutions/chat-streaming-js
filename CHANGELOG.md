@@ -10,6 +10,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ## [Unreleased]
 
 ### Added
+
 - `StreamError` class exported from the package root — extends `Error` so `instanceof` and stack traces work correctly. Replaces the previous plain-object rejection shape.
 - `createStreamConnector()` factory function exported from the package root — creates an isolated connector instance with its own connection and subscription state. Enables multi-broker scenarios and proper test isolation.
 - `destroy()` method on `StreamConnectorHandle` — disconnects from the broker and resets all internal state. `init()` may be called again after destruction.
@@ -17,6 +18,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - `StreamConnectorHandle` interface exported — describes the full public surface of a connector instance.
 
 ### Changed
+
 - **Breaking:** Errors from `addStreamSubscription`, `connectToBroker`, and `publishTopicIfConnected` are now thrown as `StreamError` instances instead of plain objects or strings. Update `catch` handlers to use `e instanceof StreamError`.
 - **Breaking:** `publishTopicIfConnected` rejects with `StreamError` (code `BROKER_DISCONNECTED`) instead of the string `'Not connected'`.
 - `init` and `updateAccessToken` now throw `Error` instances (not strings) for programming errors such as reconnect failures or calling before initialization.
@@ -32,6 +34,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - `API_SPECIFICATION.md` corrected `accessToken` → `access_token` to match implementation.
 
 ### Fixed
+
 - Module-level singleton state replaced with factory-based instance pattern (`createSubscriptionsStore`, `createStreamConnector`). Each connector instance now has fully isolated state, enabling parallel test execution without cross-test pollution.
 
 ---
@@ -41,6 +44,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 Initial public release as `@puzzel/streaming-lib`.
 
 ### Added
+
 - `StreamConnector` singleton with `init`, `updateAccessToken`, `addStreamSubscription`, `removeStreamSubscription`, `getStreamSubscriptions`, `publishTopicIfConnected`.
 - `StreamSubscription` class with deep-merge constructor.
 - `StreamErrors` numeric error code constants.

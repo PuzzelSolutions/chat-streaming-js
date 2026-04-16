@@ -143,7 +143,7 @@ Returns a `Promise<string>` that resolves to `'disconnected'` (first init),
 | `brokerLogLevel`             | `string`                          | `'none'`                      | SignalR log level: `'trace'`, `'debug'`, `'info'`, `'warn'`, `'error'`, `'critical'`, `'none'`                                                     |
 | `streamingSubscribeOnly`     | `boolean`                         | `false`                       | If `true`, skips fetching topic history on subscribe and only receives new events                                                                  |
 | `streamingSubscribeOnResume` | `boolean`                         | `true`                        | If `true`, skips re-fetching history when resuming a subscription mid-topic                                                                        |
-| `reconnectRetryPolicy`       | `number[]`                       | `[0, 500, 3000, 5000, 10000]` | SignalR auto-reconnect intervals in milliseconds                                                                  |
+| `reconnectRetryPolicy`       | `number[]`                        | `[0, 500, 3000, 5000, 10000]` | SignalR auto-reconnect intervals in milliseconds                                                                                                   |
 
 ##### Lifecycle Callbacks (BrokerEventCallbacks)
 
@@ -233,14 +233,14 @@ const subscription = new StreamSubscription({
 
 The `options` object configures how the subscription communicates with the SignalR hub:
 
-| Option              | Default       | Description                                                                                              |
-| ------------------- | ------------- | -------------------------------------------------------------------------------------------------------- |
-| `topicProperty`     | `'topic'`     | Property name sent to the hub to identify the topic. For Puzzel Chat, use `'id'`.                        |
-| `eventIdProperty`   | `'id'`        | Property name on incoming events that holds the event sequence number. For Puzzel Chat, use `'eventId'`. |
-| `topicStartEventId` | `1`           | The event ID that represents the beginning of a topic.                                                   |
-| `getMethod`         | `'Get'`       | SignalR hub method for fetching topic history.                                                           |
+| Option              | Default       | Description                                                                                                    |
+| ------------------- | ------------- | -------------------------------------------------------------------------------------------------------------- |
+| `topicProperty`     | `'topic'`     | Property name sent to the hub to identify the topic. For Puzzel Chat, use `'id'`.                              |
+| `eventIdProperty`   | `'id'`        | Property name on incoming events that holds the event sequence number. For Puzzel Chat, use `'eventId'`.       |
+| `topicStartEventId` | `1`           | The event ID that represents the beginning of a topic.                                                         |
+| `getMethod`         | `'Get'`       | SignalR hub method for fetching topic history.                                                                 |
 | `getReverseMethod`  | _(none)_      | Optional SignalR hub method for fetching topic history in reverse order (used when `fromEventId` is negative). |
-| `streamMethod`      | `'Subscribe'` | SignalR hub method for subscribing to real-time events. For Puzzel Chat, use `'StreamingGet'`.           |
+| `streamMethod`      | `'Subscribe'` | SignalR hub method for subscribing to real-time events. For Puzzel Chat, use `'StreamingGet'`.                 |
 
 The `id` property value uses the format `Type::conversationId`.
 The library splits this on `::` and sends `type` and the topic identifier as separate

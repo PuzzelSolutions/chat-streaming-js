@@ -243,7 +243,12 @@ describe('init — configuration change detection', () => {
     const factory2 = vi.fn().mockResolvedValue('token-2');
 
     await connector.init('https://broker/hub', { accessTokenFactory: factory1 }, {}, noDebug);
-    const r = await connector.init('https://broker/hub', { accessTokenFactory: factory2 }, {}, noDebug);
+    const r = await connector.init(
+      'https://broker/hub',
+      { accessTokenFactory: factory2 },
+      {},
+      noDebug,
+    );
     // Different factory reference → config changed → 'disconnected' (no active connection).
     expect(r).toBe('disconnected');
 

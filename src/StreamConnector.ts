@@ -21,14 +21,7 @@ export type BrokerTransport =
   | 'ServerSentEvents';
 
 /** Valid SignalR log level strings. */
-export type BrokerLogLevel =
-  | 'trace'
-  | 'debug'
-  | 'info'
-  | 'warn'
-  | 'error'
-  | 'critical'
-  | 'none';
+export type BrokerLogLevel = 'trace' | 'debug' | 'info' | 'warn' | 'error' | 'critical' | 'none';
 
 export interface StreamConnectorInitOptions {
   brokerTransport?: BrokerTransport;
@@ -556,7 +549,9 @@ export function createStreamConnector(): StreamConnectorHandle {
           return true;
         });
 
-        const receivedAs = getFullTopicState ? StreamEventTypes.STATE : StreamEventTypes.STREAMED_CHUNK;
+        const receivedAs = getFullTopicState
+          ? StreamEventTypes.STATE
+          : StreamEventTypes.STREAMED_CHUNK;
         const preparedEventsData = prepareEventsPayload(
           eventsArray,
           receivedAs,
@@ -683,7 +678,9 @@ export function createStreamConnector(): StreamConnectorHandle {
   async function publishTopicWhenConnected(topic: string, data: unknown): Promise<void> {
     const connection = await getConnection();
     try {
-      return await Stream.publish(connection, topic, data, { publishMethod: options.publishMethod });
+      return await Stream.publish(connection, topic, data, {
+        publishMethod: options.publishMethod,
+      });
     } catch (e) {
       debug.log('Exception in publishTopic: ', e);
       throw e;
@@ -753,7 +750,8 @@ export function createStreamConnector(): StreamConnectorHandle {
       publishMethod: 'Publish',
       brokerUrl,
       brokerTransport: initOptions.brokerTransport || 'WebSockets',
-      brokerLogLevel: (brokerLogLevelOverride as BrokerLogLevel) || initOptions.brokerLogLevel || 'none',
+      brokerLogLevel:
+        (brokerLogLevelOverride as BrokerLogLevel) || initOptions.brokerLogLevel || 'none',
       streamingSubscribeOnly: !!initOptions.streamingSubscribeOnly,
       streamingSubscribeOnResume: initOptions.streamingSubscribeOnResume !== false,
       access_token: initOptions.access_token || null,
@@ -797,7 +795,9 @@ export function createStreamConnector(): StreamConnectorHandle {
     }
   };
 
-  const updateAccessToken = async (new_access_token?: string | null): Promise<string | undefined> => {
+  const updateAccessToken = async (
+    new_access_token?: string | null,
+  ): Promise<string | undefined> => {
     if (!brokerConnection) {
       throw new Error('StreamConnector not initialized. Call init() before updateAccessToken().');
     }

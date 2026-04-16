@@ -171,8 +171,8 @@ Throws `"Not connected"` if broker is not connected.
 
 ## StreamError
 
-| JS                                                                           | Kotlin                                                              | Swift                                                                |
-| ---------------------------------------------------------------------------- | ------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| JS                                                                          | Kotlin                                                              | Swift                                                                |
+| --------------------------------------------------------------------------- | ------------------------------------------------------------------- | -------------------------------------------------------------------- |
 | `class StreamError extends Error` with `errorCode`, `message`, `err` fields | `class StreamError(errorCode, message, cause?)` extends `Exception` | `struct StreamError: LocalizedError` with `code`, `message`, `cause` |
 
 ## BrokerEventCallbacks

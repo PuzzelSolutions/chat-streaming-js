@@ -190,10 +190,10 @@ try {
 }
 ```
 
-| Property    | Type              | Description                              |
-| ----------- | ----------------- | ---------------------------------------- |
-| `errorCode` | `StreamErrorCode` | Numeric code — one of `StreamErrors.*`   |
-| `message`   | `string`          | Human-readable description               |
+| Property    | Type              | Description                               |
+| ----------- | ----------------- | ----------------------------------------- |
+| `errorCode` | `StreamErrorCode` | Numeric code — one of `StreamErrors.*`    |
+| `message`   | `string`          | Human-readable description                |
 | `err`       | `unknown`         | Original error from SignalR or the broker |
 
 ---
