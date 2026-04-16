@@ -1,6 +1,6 @@
 {
-  "name": "@puzzel/streaming-lib",
-  "version": "2.1.1",
+  "name": "@puzzel-public/streaming-lib",
+  "version": "2.1.2",
   "description": "Streaming library for PCC Chat (new)",
   "license": "MIT",
   "main": "./dist/streaming-lib.cjs",
